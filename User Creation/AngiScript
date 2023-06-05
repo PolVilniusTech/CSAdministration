@@ -1,0 +1,187 @@
+#!/usr/bin/python
+
+import urllib3
+import base64
+import shlex
+import re
+import subprocess
+import os
+import time
+
+
+class Launch:
+
+    Type = ("LinuxOS","OtherOS")
+    TypeOption = [0,0]
+    SuperUser = 0
+    UserName = 'nobody'
+    UserHome = 0
+    HomeDir = '/home/nobody'
+    
+    def __init__(self):
+        self.OperationName = "Create User Support"
+        self.OperationDescription = "Functionality for creating new User " \
+        "in the Computer System."
+
+    def options(self, sec='long'):
+        if sec=='long':
+            print("Loaded Operation: " + str(self.OperationName))
+            print("Options: ")
+            
+            print("\nAvailable Helper: ")
+            for item in self.Type:
+                print("\t" + item)
+        
+        print("\nName of the User: ")
+        print("\t" + self.UserName)
+        print("\nHome Directory: ")
+        if (self.UserHome):
+            print("\tDir: Required")
+        else:
+            print("\tDir: Not Required")
+        print("\tCurrent Dir: " + self.HomeDir)
+
+    def SetOptions(self):
+        print("\tChoose Options:")
+        username_s = False
+        while (username_s == False):
+            username = input("What is the Username?\n")
+            response = self.checkUsername(username)
+            username_s = response[0]
+            print(response[1])
+        
+        self.UserName = username
+        value = input("Does '" + username + "' User require a Home Directory? (y/n) ")
+        if value == "y" or value == "Y":
+            self.UserHome = 1
+            value2 = input("Does this '" + "/home/" + username + "' as Home Directory is good enough? (y/n) ")
+            if value2 == "y" or value2 == "Y":
+                self.HomeDir = "/home/" + username
+            else:
+                homedir_s = False
+                while (homedir_s == False):
+                    hdir = input("What is the Name of the '" + username + "' User's Home Directory?\n")
+                    response = self.checkHomeDir(hdir)
+                    homedir_s = response[0]
+                    print(response[1])
+                
+                self.HomeDir = "/home/" + hdir
+                
+        else:
+            self.UserHome = 0
+            self.HomeDir = "/home/nobody"
+        
+        self.options('short')
+        value = input("Do You happy with these Options? (y/n) ")
+        if value == "n" or value == "N":
+            self.SetOptions()
+        else:
+            # Manual Linux OS
+            self.TypeOption[0] = 1
+        
+    def OperationStart(self):
+        self.options('long')
+        value = input("Do You happy with these Options? (y/n) ")
+        if value == "y" or value == "Y":
+            # Manual Linux OS
+            self.TypeOption[0] = 1
+        else:
+            self.SetOptions()
+        del value
+
+        print("Current time: " + str(time.ctime()))
+        time.sleep(1)
+        
+        i = 0
+        for item in self.Type:
+            if item == "LinuxOS" and self.TypeOption[i] == 1:
+                print("\nLinuxOS User Creation:")
+                self.LinuxOSadduser()
+            else:
+                pass
+            
+            i += 1
+    
+    def LinuxOSadduser(self):
+        print('')
+        print("OS prod information:")
+        print(os.system('uname -a'))
+        cmd = ""
+        
+        if(self.UserName == 'nobody'):
+            print("Notice. This is default value '" + self.UserName + "'. It would be wise to use something else.")
+        else:
+            cmd = "adduser " + self.UserName
+            if(self.UserHome):
+                cmd = "adduser --home " + self.HomeDir + " " + self.UserName
+            
+            os.system("sudo " + cmd)
+            
+        print("Operation finished.")
+    
+    def checkUsername(self, username):
+        verdict_r = True
+        notify_r = "Everything clear."
+    
+        r = re.fullmatch(r"[a-zA-Z0-9_]+",username)
+        
+        if r is None:
+            verdict_r = False
+            notify_r = "In-build error: Only Small and Big Latin Letters are " \
+            "applicable including West Arabic Numbers and Underscore."
+        
+        try:
+            result = subprocess.run(
+                ['cat','/etc/passwd'], capture_output=True, text=True
+            )
+        except subprocess.CalledProcessError as error:
+            print('Error: ' + error)
+          
+        var_output = result.stdout.split("\n")
+        
+        for item in var_output:
+            usr = item.split(":",maxsplit=1)
+            if(usr[0] == username):
+                verdict_r = False
+                notify_r = "In-build error: This username already exists."
+        
+        del var_output
+        
+        return [verdict_r, notify_r]
+    
+    def checkHomeDir(self, hdir):
+        verdict_r = True
+        notify_r = "Everything clear."
+        
+        r = re.fullmatch(r"[a-zA-Z0-9_]+",hdir)
+        
+        if r is None:
+            verdict_r = False
+            notify_r = "In-build error: Only Small and Big Latin Letters are " \
+            "applicable including West Arabic Numbers and Underscore."
+        
+        try:
+            result = subprocess.run(
+                ['ls','/home'], capture_output=True, text=True
+            )
+        except subprocess.CalledProcessError as error:
+            print('Error: ' + error)
+            
+        var_output = result.stdout.split("\n")
+        
+        for item in var_output:
+            if(item == hdir):
+                verdict_r = False
+                notify_r = "In-build error: This Home Directory already exists."
+        
+        del var_output
+                
+        return [verdict_r, notify_r];
+    
+    def checkValueInData(self, value, data):
+        return data.find(value)
+        
+    
+obj = Launch()
+
+obj.OperationStart()
