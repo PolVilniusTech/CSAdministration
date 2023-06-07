@@ -112,7 +112,7 @@ class Launch:
         if(self.UserName == 'nobody'):
             print("Notice. This is default value '" + self.UserName + "'. It would be wise to use something else.")
         elif(user[1] != True):
-            print("Notice. This '" + self.user[0] + "' is a not privileged user for such Task.")
+            print("Notice. This '" + user[0] + "' is a not privileged user for such Task.")
         else:
             cmd = "adduser " + self.UserName
             if(self.UserHome):
