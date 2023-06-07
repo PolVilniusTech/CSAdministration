@@ -107,9 +107,12 @@ class Launch:
         print("OS prod information:")
         print(os.system('uname -a'))
         cmd = ""
+        user = self.isCappableUser()
         
         if(self.UserName == 'nobody'):
             print("Notice. This is default value '" + self.UserName + "'. It would be wise to use something else.")
+        elif(user[1] != True):
+            print("Notice. This '" + self.user[0] + "' is a not privileged user for such Task.")
         else:
             cmd = "adduser " + self.UserName
             if(self.UserHome):
@@ -181,7 +184,27 @@ class Launch:
     def checkValueInData(self, value, data):
         return data.find(value)
         
-    
+    def isCappableUser(self):
+        cappability = False
+        user = ""
+        
+        try:
+            var_user = subprocess.check_output(['whoami'])
+            user = var_user.decode('ascii').split('\n')
+            user = str(user[0])
+        except subprocess.CalledProcessError as error:
+            print('Error: ' + error)
+        
+        try:
+            var_output = subprocess.check_output(['groups', str(user)])
+        except subprocess.CalledProcessError as error2:
+            print('Error: ' + error2)
+        
+        if(b'sudo' in var_output or b'adm' in var_output or b'wheel' in var_output or b'root' in var_output):
+            cappability = True
+        
+        return [user, cappability]
+                
 obj = Launch()
 
 obj.OperationStart()
